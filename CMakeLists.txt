@@ -29,6 +29,7 @@ target_link_libraries(
 )
 
 # Tests
+# test utility
 add_executable(
         test_utility
         tests/test_utility.cpp
@@ -41,4 +42,19 @@ target_link_libraries(
 add_test(
         NAME test_utility
         COMMAND test_utility
+)
+
+# test algorithm
+add_executable(
+        test_algorithm
+        tests/test_algorithm.cpp
+)
+target_link_libraries(
+        test_algorithm
+        PRIVATE
+        minialgo
+)
+add_test(
+        NAME test_algorithm
+        COMMAND test_algorithm
 )
