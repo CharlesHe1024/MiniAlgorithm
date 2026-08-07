@@ -7,6 +7,7 @@
 #include <minialgo/Algorithm.h>
 
 #include <vector>
+#include <list>
 #include <iterator>
 
 void testFindInVector() {
@@ -194,6 +195,245 @@ void testCountPerson() {
     );
 }
 
+void testForEachModifiesElements() {
+    std::vector<int> values{1, 2, 3};
+
+    minialgo::for_each(
+        values.begin(),
+        values.end(),
+        [](int &value) {
+            value *= 2;
+        }
+    );
+
+    ASSERT_EQ(values[0], 2);
+    ASSERT_EQ(values[1], 4);
+    ASSERT_EQ(values[2], 6);
+}
+
+void testForEachAccumulatesValues() {
+    std::vector<int> values{1, 2, 3, 4};
+
+    int sum = 0;
+
+    minialgo::for_each(
+        values.begin(),
+        values.end(),
+        [&sum](int value) {
+            sum += value;
+        }
+    );
+
+    ASSERT_EQ(sum, 10);
+}
+
+struct MultiplyBy {
+    int factor;
+
+    void operator()(int &value) const {
+        value *= factor;
+    }
+};
+
+void testForEachWithFunctionObject() {
+    std::vector<int> values{1, 2, 3};
+
+    minialgo::for_each(
+        values.begin(),
+        values.end(),
+        MultiplyBy{3}
+    );
+
+    ASSERT_EQ(values[0], 3);
+    ASSERT_EQ(values[1], 6);
+    ASSERT_EQ(values[2], 9);
+}
+
+void testCopyToExistingRange() {
+    std::vector<int> source{1, 2, 3};
+    std::vector<int> destination(3);
+
+    const auto result =
+            minialgo::copy(
+                source.begin(),
+                source.end(),
+                destination.begin()
+            );
+
+    ASSERT_EQ(destination[0], 1);
+    ASSERT_EQ(destination[1], 2);
+    ASSERT_EQ(destination[2], 3);
+
+    ASSERT_TRUE(result == destination.end());
+}
+
+void testCopyWithBackInserter() {
+    std::vector<int> source{1, 2, 3};
+    std::vector<int> destination;
+
+    minialgo::copy(
+        source.begin(),
+        source.end(),
+        std::back_inserter(destination)
+    );
+
+    ASSERT_EQ(destination.size(), std::size_t{3});
+    ASSERT_EQ(destination[0], 1);
+    ASSERT_EQ(destination[1], 2);
+    ASSERT_EQ(destination[2], 3);
+}
+
+void testCopyFromListToVector() {
+    std::list<int> source{10, 20, 30};
+    std::vector<int> destination;
+    minialgo::copy(source.begin(), source.end(), std::back_inserter(destination));
+    ASSERT_EQ(destination.size(), std::size_t{3});
+    ASSERT_EQ(destination[0], 10);
+    ASSERT_EQ(destination[1], 20);
+    ASSERT_EQ(destination[2], 30);
+}
+
+void testFillVector() {
+    std::vector<int> values{1, 2, 3, 4};
+    minialgo::fill(values.begin(), values.end(), 10);
+    ASSERT_EQ(values[0], 10);
+    ASSERT_EQ(values[1], 10);
+    ASSERT_EQ(values[2], 10);
+    ASSERT_EQ(values[3], 10);
+}
+
+void testFillPartialRange() {
+    std::vector<int> values{1, 2, 3, 4};
+
+    minialgo::fill(
+        values.begin() + 1,
+        values.begin() + 3,
+        9
+    );
+
+    ASSERT_EQ(values[0], 1);
+    ASSERT_EQ(values[1], 9);
+    ASSERT_EQ(values[2], 9);
+    ASSERT_EQ(values[3], 4);
+}
+
+void testFillEmptyRange() {
+    std::vector<int> values{1, 2, 3};
+
+    minialgo::fill(
+        values.begin(),
+        values.begin(),
+        100
+    );
+
+    ASSERT_EQ(values[0], 1);
+    ASSERT_EQ(values[1], 2);
+    ASSERT_EQ(values[2], 3);
+}
+
+void testFillArray() {
+    int values[] = {1, 2, 3};
+    minialgo::fill(
+        std::begin(values),
+        std::end(values),
+        7
+    );
+    ASSERT_EQ(values[0], 7);
+    ASSERT_EQ(values[1], 7);
+    ASSERT_EQ(values[2], 7);
+}
+
+void testFillString() {
+    std::vector<std::string> values{
+        "a", "b", "c"
+    };
+
+    minialgo::fill(
+        values.begin(),
+        values.end(),
+        std::string{"same"}
+    );
+
+    ASSERT_EQ(values[0], std::string{"same"});
+    ASSERT_EQ(values[1], std::string{"same"});
+    ASSERT_EQ(values[2], std::string{"same"});
+}
+
+void testTransformSquaresValues() {
+    std::vector<int> values{1, 2, 3};
+    std::vector<int> destination(3);
+    const auto result = minialgo::transform(
+        values.begin(),
+        values.end(),
+        destination.begin(),
+        [](const auto &v) {
+            return v * v;
+        }
+    );
+    ASSERT_EQ(destination[0], 1);
+    ASSERT_EQ(destination[1], 4);
+    ASSERT_EQ(destination[2], 9);
+
+    ASSERT_TRUE(result == destination.end());
+}
+
+void testTransformWithBackInserter() {
+    std::vector<int> source{1, 2, 3};
+    std::vector<std::string> destination;
+
+    minialgo::transform(
+        source.begin(),
+        source.end(),
+        std::back_inserter(destination),
+        [](int value) {
+            return std::to_string(value);
+        }
+    );
+
+    ASSERT_EQ(destination.size(), std::size_t{3});
+    ASSERT_EQ(destination[0], std::string{"1"});
+    ASSERT_EQ(destination[1], std::string{"2"});
+    ASSERT_EQ(destination[2], std::string{"3"});
+}
+
+void testTransformInPlace() {
+    std::vector<int> values{1, 2, 3};
+
+    minialgo::transform(
+        values.begin(),
+        values.end(),
+        values.begin(),
+        [](int value) {
+            return value * 10;
+        }
+    );
+
+    ASSERT_EQ(values[0], 10);
+    ASSERT_EQ(values[1], 20);
+    ASSERT_EQ(values[2], 30);
+}
+
+void testTransformPersonToName() {
+    std::vector<Person> people{
+        Person{"Alice", 18},
+        Person{"Bob", 20}
+    };
+
+    std::vector<std::string> names;
+
+    minialgo::transform(
+        people.begin(),
+        people.end(),
+        std::back_inserter(names),
+        [](const Person &person) {
+            return person.name();
+        }
+    );
+
+    ASSERT_EQ(names[0], std::string{"Alice"});
+    ASSERT_EQ(names[1], std::string{"Bob"});
+}
+
 int main() {
     testFindInVector();
     testFindMissingValue();
@@ -205,6 +445,22 @@ int main() {
     testCountEmptyRange();
     testCountInArray();
     testCountPerson();
+    testForEachModifiesElements();
+    testForEachAccumulatesValues();
+    testForEachWithFunctionObject();
+    testCopyToExistingRange();
+    testCopyWithBackInserter();
+    testCopyWithBackInserter();
+    testCopyFromListToVector();
+    testFillVector();
+    testFillPartialRange();
+    testFillEmptyRange();
+    testFillArray();
+    testFillString();
+    testTransformSquaresValues();
+    testTransformWithBackInserter();
+    testTransformInPlace();
+    testTransformPersonToName();
 
     std::cout << "Algorithm tests passed\n";
     return 0;
