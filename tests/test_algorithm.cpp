@@ -171,6 +171,10 @@ public:
                && age_ == other.age_;
     }
 
+    [[nodiscard]] bool isAdult() {
+        return age_ >= 18;
+    }
+
 private:
     std::string name_;
     int age_;
@@ -434,6 +438,453 @@ void testTransformPersonToName() {
     ASSERT_EQ(names[1], std::string{"Bob"});
 }
 
+// 普通函数
+bool isEven(int value) {
+    return value % 2 == 0;
+}
+
+// Function Object
+struct GreaterThan {
+    int threshold;
+
+    bool operator()(int value) const {
+        return value > threshold;
+    }
+};
+
+void testFindIfWithLambda() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto it = minialgo::findIf(
+        values.begin(),
+        values.end(),
+        [](int value) {
+            return value % 2 == 0;
+        }
+    );
+
+    ASSERT_TRUE(it != values.end());
+    ASSERT_EQ(*it, 8);
+}
+
+void testFindIfWithFunctionObject() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto it = minialgo::findIf(
+        values.begin(),
+        values.end(),
+        GreaterThan{7}
+    );
+
+    ASSERT_TRUE(it != values.end());
+    ASSERT_EQ(*it, 8);
+}
+
+void testFindIfWithFunction() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto it = minialgo::findIf(
+        values.begin(),
+        values.end(),
+        isEven
+    );
+
+    ASSERT_TRUE(it != values.end());
+    ASSERT_EQ(*it, 8);
+}
+
+void testFindIfNotFound() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto it = minialgo::findIf(
+        values.begin(),
+        values.end(),
+        [](int value) {
+            return value > 100;
+        }
+    );
+
+    ASSERT_TRUE(it == values.end());
+}
+
+void testFindIfClassMemberFunctionPointer() {
+    std::vector<Person> persons{
+        {"test", 1},
+        {"test", 3},
+        {"test", 8},
+        {"test", 19},
+        {"test", 30}
+    };
+    auto it = minialgo::findIf(
+        persons.begin(),
+        persons.end(),
+        &Person::isAdult
+    );
+    ASSERT_TRUE(it != persons.end());
+    ASSERT_EQ(it->age(), 19);
+    ASSERT_TRUE(((*it).*(&Person::isAdult))());
+}
+
+void testFindIfClassMemberFunctionPointerUsingProjection() {
+    std::vector<Person> persons{
+        {"test", 1},
+        {"test", 3},
+        {"test", 8},
+        {"test", 19},
+        {"test", 30}
+    };
+
+    auto it = minialgo::findIf(
+        persons.begin(),
+        persons.end(),
+        [](int age) { return age >= 18; },
+        &Person::age
+    );
+    ASSERT_TRUE(it != persons.end());
+    ASSERT_EQ(it->age(), 19);
+}
+
+void testCountIfWithLambda() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto result = minialgo::countIf(
+        values.begin(),
+        values.end(),
+        [](int value) {
+            return value % 2 == 0;
+        }
+    );
+
+    ASSERT_EQ(result, 2);
+}
+
+void testCountIfWithFunctionObject() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto result = minialgo::countIf(
+        values.begin(),
+        values.end(),
+        GreaterThan{7}
+    );
+
+    ASSERT_EQ(result, 2);
+}
+
+void testCountIfWithFunction() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto result = minialgo::countIf(
+        values.begin(),
+        values.end(),
+        isEven
+    );
+
+    ASSERT_EQ(result, 2);
+}
+
+void testCountIfNotFound() {
+    std::vector<int> values{1, 3, 7, 8, 10};
+
+    auto result = minialgo::countIf(
+        values.begin(),
+        values.end(),
+        [](int value) {
+            return value > 100;
+        }
+    );
+
+    ASSERT_EQ(result, 0);
+}
+
+void testCountIfClassMemberFunctionPointer() {
+    std::vector<Person> persons{
+        {"test", 1},
+        {"test", 3},
+        {"test", 8},
+        {"test", 19},
+        {"test", 30}
+    };
+    auto result = minialgo::countIf(
+        persons.begin(),
+        persons.end(),
+        &Person::isAdult
+    );
+    ASSERT_EQ(result, 2);
+}
+
+void testCountIfClassMemberFunctionPointerUsingProjection() {
+    std::vector<Person> persons{
+        {"test", 1},
+        {"test", 3},
+        {"test", 8},
+        {"test", 19},
+        {"test", 30}
+    };
+
+    auto result = minialgo::countIf(
+        persons.begin(),
+        persons.end(),
+        [](int age) { return age >= 18; },
+        &Person::age
+    );
+    ASSERT_EQ(result, 2);
+}
+
+void testAllOfTrue() {
+    std::vector<int> values{2, 4, 6};
+
+    ASSERT_TRUE(
+        minialgo::allOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value % 2 == 0;
+            }
+        )
+    );
+}
+
+void testAllOfFalse() {
+    std::vector<int> values{2, 4, 5, 6};
+
+    ASSERT_FALSE(
+        minialgo::allOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value % 2 == 0;
+            }
+        )
+    );
+}
+
+void testAllOfEmptyRange() {
+    std::vector<int> values;
+
+    ASSERT_TRUE(
+        minialgo::allOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value > 0;
+            }
+        )
+    );
+}
+
+void testAllOfWithProjection() {
+    std::vector<Person> people{
+        {"Alice", 20},
+        {"Bob", 25},
+        {"Charlie", 18}
+    };
+
+    ASSERT_TRUE(
+        minialgo::allOf(
+            people.begin(),
+            people.end(),
+            [](int age) {
+            return age >= 18;
+            },
+            &Person::age
+        )
+    );
+}
+
+void testAnyOfTrue() {
+    std::vector<int> values{1, 3, 4, 7};
+
+    ASSERT_TRUE(
+        minialgo::anyOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value % 2 == 0;
+            }
+        )
+    );
+}
+
+void testAnyOfFalse() {
+    std::vector<int> values{1, 3, 5, 7};
+
+    ASSERT_TRUE(
+        !minialgo::anyOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value % 2 == 0;
+            }
+        )
+    );
+}
+
+void testAnyOfEmpty() {
+    std::vector<int> values;
+
+    ASSERT_TRUE(
+        !minialgo::anyOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value > 0;
+            }
+        )
+    );
+}
+
+void testAnyOfWithProjection() {
+    std::vector<Person> people{
+        {"Alice", 17},
+        {"Bob", 20},
+        {"Charlie", 15}
+    };
+
+    ASSERT_TRUE(
+        minialgo::anyOf(
+            people.begin(),
+            people.end(),
+            [](int age) {
+            return age >= 18;
+            },
+            &Person::age
+        )
+    );
+}
+
+void testNoneOfTrue() {
+    std::vector<int> values{1, 3, 5, 7};
+
+    ASSERT_TRUE(
+        minialgo::noneOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value % 2 == 0;
+            }
+        )
+    );
+}
+
+void testNoneOfFalse() {
+    std::vector<int> values{1, 3, 4, 7};
+
+    ASSERT_TRUE(
+        !minialgo::noneOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value % 2 == 0;
+            }
+        )
+    );
+}
+
+void testNoneOfEmpty() {
+    std::vector<int> values;
+
+    ASSERT_TRUE(
+        minialgo::noneOf(
+            values.begin(),
+            values.end(),
+            [](int value) {
+            return value > 0;
+            }
+        )
+    );
+}
+
+void testNoneOfWithProjection() {
+    std::vector<Person> people{
+        {"Alice", 17},
+        {"Bob", 16},
+        {"Charlie", 15}
+    };
+
+    ASSERT_TRUE(
+        minialgo::noneOf(
+            people.begin(),
+            people.end(),
+            [](int age) {
+            return age >= 18;
+            },
+            &Person::age
+        )
+    );
+}
+
+void testCopyBackwardBasic() {
+    std::vector<int> source{
+        1, 2, 3
+    };
+
+    std::vector<int> destination(5, 0);
+
+    auto result = minialgo::copyBackward(
+        source.begin(),
+        source.end(),
+        destination.end()
+    );
+
+    ASSERT_EQ(destination[0], 0);
+    ASSERT_EQ(destination[1], 0);
+    ASSERT_EQ(destination[2], 1);
+    ASSERT_EQ(destination[3], 2);
+    ASSERT_EQ(destination[4], 3);
+
+    ASSERT_TRUE(
+        result == destination.begin() + 2
+    );
+}
+
+void testCopyBackwardOverlappingToRight() {
+    std::vector<int> values{
+        1, 2, 3, 4, 5
+    };
+
+    minialgo::copyBackward(
+        values.begin(),
+        values.begin() + 3,
+        values.end()
+    );
+
+    ASSERT_EQ(values[0], 1);
+    ASSERT_EQ(values[1], 2);
+    ASSERT_EQ(values[2], 1);
+    ASSERT_EQ(values[3], 2);
+    ASSERT_EQ(values[4], 3);
+}
+
+void testCopyBackwardList() {
+    std::list<int> source{
+        10, 20, 30
+    };
+
+    std::list<int> destination{
+        0, 0, 0
+    };
+
+    auto result = minialgo::copyBackward(
+        source.begin(),
+        source.end(),
+        destination.end()
+    );
+
+    ASSERT_TRUE(
+        result == destination.begin()
+    );
+
+    auto it = destination.begin();
+
+    ASSERT_EQ(*it, 10);
+    ++it;
+
+    ASSERT_EQ(*it, 20);
+    ++it;
+
+    ASSERT_EQ(*it, 30);
+}
+
 int main() {
     testFindInVector();
     testFindMissingValue();
@@ -461,6 +912,33 @@ int main() {
     testTransformWithBackInserter();
     testTransformInPlace();
     testTransformPersonToName();
+    testFindIfWithLambda();
+    testFindIfWithFunctionObject();
+    testFindIfWithFunction();
+    testFindIfNotFound();
+    testFindIfClassMemberFunctionPointer();
+    testFindIfClassMemberFunctionPointerUsingProjection();
+    testCountIfWithLambda();
+    testCountIfWithFunctionObject();
+    testCountIfWithFunction();
+    testCountIfNotFound();
+    testCountIfClassMemberFunctionPointer();
+    testCountIfClassMemberFunctionPointerUsingProjection();
+    testAllOfTrue();
+    testAllOfFalse();
+    testAllOfEmptyRange();
+    testAllOfWithProjection();
+    testAnyOfTrue();
+    testAnyOfFalse();
+    testAnyOfEmpty();
+    testAnyOfWithProjection();
+    testNoneOfTrue();
+    testNoneOfFalse();
+    testNoneOfEmpty();
+    testNoneOfWithProjection();
+    testCopyBackwardBasic();
+    testCopyBackwardOverlappingToRight();
+    testCopyBackwardList();
 
     std::cout << "Algorithm tests passed\n";
     return 0;

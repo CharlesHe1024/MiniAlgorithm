@@ -21,13 +21,14 @@ namespace tests {
     if (!(condition)) {\
     tests::fail(#condition, __FILE__, __LINE__);\
     }\
-    } while (false)
+    } while(false)
 
 #define ASSERT_FALSE(condition)\
     do {\
     if (condition) {\
     tests::fail("!(" #condition ")", __FILE__, __LINE__);\
-    } while(fales)
+    }\
+    } while(false)
 
 #define ASSERT_EQ(a, b) \
     do {\
