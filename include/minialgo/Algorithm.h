@@ -5,12 +5,52 @@
 #pragma once
 
 #include <iterator>
+#include <functional>
+#include <concepts>
+
 
 namespace minialgo {
-    template<typename InputIterator, typename T>
-    InputIterator find(InputIterator first, InputIterator last, const T &value) {
+    template<std::input_iterator Iterator, typename T>
+    Iterator find(Iterator first, Iterator last, const T &value) {
         while (first != last) {
             if (*first == value) {
+                return first;
+            }
+            ++first;
+        }
+        return last;
+    }
+
+    template<
+        std::input_iterator Iterator,
+        typename Predicate,
+        typename Projection = std::identity>
+        requires requires(
+    Iterator iterator,
+    Predicate predicate,
+    Projection projection
+)
+        {
+            std::invoke(projection, *iterator);
+            {
+                std::invoke(
+                    predicate,
+                    std::invoke(projection, *iterator)
+                )
+            } -> std::convertible_to<bool>;
+        }
+    Iterator findIf(
+        Iterator first,
+        Iterator last,
+        Predicate predicate,
+        Projection projection = {}
+    ) {
+        while (first != last) {
+            if (
+                std::invoke(predicate,
+                            std::invoke(projection, *first)
+                )
+            ) {
                 return first;
             }
             ++first;
@@ -32,6 +72,45 @@ namespace minialgo {
         return result;
     }
 
+    template<
+        std::input_iterator Iterator,
+        typename Predicate,
+        typename Projection = std::identity>
+        requires requires(
+    Iterator iterator,
+    Predicate predicate,
+    Projection projection
+)
+        {
+            std::invoke(projection, *iterator);
+            {
+                std::invoke(
+                    predicate,
+                    std::invoke(projection, *iterator)
+                )
+            } -> std::convertible_to<bool>;
+        }
+    auto countIf(
+        Iterator first,
+        Iterator last,
+        Predicate predicate,
+        Projection projection = {}
+    ) {
+        using DifferenceType = typename std::iterator_traits<Iterator>::difference_type;
+        DifferenceType result{0};
+        for (; first != last; ++first) {
+            if (
+                std::invoke(
+                    predicate,
+                    std::invoke(projection, *first)
+                )
+            ) {
+                ++result;
+            }
+        }
+        return result;
+    }
+
     template<typename InputIterator, typename Function>
     Function for_each(InputIterator first, InputIterator last, Function function) {
         for (; first != last; ++first) {
@@ -40,16 +119,44 @@ namespace minialgo {
         return function;
     }
 
-    template<typename InputIterator, typename OutputIterator>
+    template<
+        std::input_iterator InputIterator,
+        typename OutputIterator
+    >
+        requires std::indirectly_copyable<
+            InputIterator,
+            OutputIterator
+        >
     OutputIterator copy(
         InputIterator first,
         InputIterator last,
-        OutputIterator destination
+        OutputIterator destinationFirst
     ) {
-        for (; first != last; ++first, ++destination) {
-            *destination = *first;
+        for (; first != last; ++first, ++destinationFirst) {
+            *destinationFirst = *first;
         }
-        return destination;
+        return destinationFirst;
+    }
+
+    template<
+        std::bidirectional_iterator InputIterator,
+        std::bidirectional_iterator OutputIterator
+    >
+        requires std::indirectly_copyable<
+            InputIterator,
+            OutputIterator
+        >
+    OutputIterator copyBackward(
+        InputIterator first,
+        InputIterator last,
+        OutputIterator destinationLast
+    ) {
+        while (first != last) {
+            --last;
+            --destinationLast;
+            *destinationLast = *last;
+        }
+        return destinationLast;
     }
 
     template<typename ForwardIterator, typename T>
@@ -74,5 +181,110 @@ namespace minialgo {
             *destination = operation(*first);
         }
         return destination;
+    }
+
+    template<
+        std::input_iterator Iterator,
+        typename Predicate,
+        typename Project = std::identity>
+        requires requires(
+    Iterator iterator,
+    Predicate predicate,
+    Project project)
+        {
+            std::invoke(project, *iterator);
+            {
+                std::invoke(
+                    predicate,
+                    std::invoke(project, *iterator)
+                )
+            } -> std::convertible_to<bool>;
+        }
+    bool allOf(
+        Iterator first,
+        Iterator last,
+        Predicate predicate,
+        Project project = {}
+    ) {
+        for (; first != last; ++first) {
+            if (
+                !std::invoke(
+                    predicate,
+                    std::invoke(project, *first)
+                )
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template<
+        std::input_iterator Iterator,
+        typename Predicate,
+        typename Projection = std::identity>
+        requires requires(
+    Iterator iterator,
+    Predicate predicate,
+    Projection projection
+)
+        {
+            std::invoke(projection, *iterator);
+            {
+                std::invoke(
+                    predicate,
+                    std::invoke(projection, *iterator)
+                )
+            } -> std::convertible_to<bool>;
+        }
+    bool anyOf(
+        Iterator first,
+        Iterator last,
+        Predicate predicate,
+        Projection projection = {}
+    ) {
+        for (; first != last; ++first) {
+            if (
+                std::invoke(
+                    predicate,
+                    std::invoke(projection, *first)
+                )
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    template<
+        std::input_iterator Iterator,
+        typename Predicate,
+        typename Projection = std::identity>
+        requires requires(
+    Iterator iterator,
+    Predicate predicate,
+    Projection projection
+)
+        {
+            std::invoke(projection, *iterator);
+            {
+                std::invoke(
+                    predicate,
+                    std::invoke(projection, *iterator)
+                )
+            } -> std::convertible_to<bool>;
+        }
+    bool noneOf(
+        Iterator first,
+        Iterator last,
+        Predicate predicate,
+        Projection projection = {}
+    ) {
+        return !anyOf(
+            first,
+            last,
+            std::move(predicate),
+            std::move(projection)
+        );
     }
 } // namespace minialgo

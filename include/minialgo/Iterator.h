@@ -5,6 +5,8 @@
 #pragma once
 
 #include <iterator>
+#include <stdexcept>
+#include <type_traits>
 
 #include "IteratorTraits.h"
 

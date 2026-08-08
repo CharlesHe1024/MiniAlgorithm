@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <iterator>
+#include <type_traits>
 
 namespace minialgo {
     template<typename Iterator>
