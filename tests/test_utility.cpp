@@ -3,10 +3,10 @@
 //
 
 #include "test_frame_work.h"
-#include <minialgo/Utility.h>
 #include <iostream>
-#include <string>
 #include <memory>
+#include <minialgo/Utility.h>
+#include <string>
 
 void testMaxInt() {
     ASSERT_EQ(minialgo::max(3, 5), 5);
@@ -31,29 +31,30 @@ void testMaxEqual() {
 }
 
 class Person {
-public:
-    Person(std::string name, int age)
-        : name_(std::move(name)), age_(age) {
+  public:
+    Person(std::string name, int age) : name_(std::move(name)), age_(age) {}
+
+    const std::string& name() const noexcept {
+        return name_;
     }
 
-    const std::string &name() const noexcept { return name_; }
+    int age() const noexcept {
+        return age_;
+    }
 
-    int age() const noexcept { return age_; }
-
-    bool operator>(const Person &other) const {
+    bool operator>(const Person& other) const {
         return age_ > other.age_;
     }
 
-    bool operator<(const Person &other) const {
+    bool operator<(const Person& other) const {
         return age_ < other.age_;
     }
 
-    bool operator==(const Person &other) const {
-        return name_ == other.name_
-               && age_ == other.age_;
+    bool operator==(const Person& other) const {
+        return name_ == other.name_ && age_ == other.age_;
     }
 
-private:
+  private:
     std::string name_;
     int age_;
 };
@@ -69,7 +70,7 @@ void testMaxReturnReference() {
     int a = 3;
     int b = 5;
 
-    const int &r = minialgo::max(a, b);
+    const int& r = minialgo::max(a, b);
 
     ASSERT_TRUE(&r == &b);
 }
@@ -78,7 +79,7 @@ void testMaxReturnReferenceWhenFirstIsGreater() {
     int a = 8;
     int b = 5;
 
-    const int &r = minialgo::max(a, b);
+    const int& r = minialgo::max(a, b);
 
     ASSERT_TRUE(&r == &a);
 }
@@ -87,8 +88,7 @@ void testMaxReturnsFirstWhenEqual() {
     int a = 5;
     int b = 5;
 
-    const int &result =
-            minialgo::max(a, b);
+    const int& result = minialgo::max(a, b);
 
     ASSERT_TRUE(&result == &a);
 }
@@ -122,8 +122,7 @@ void testMinReturnsOriginalObject() {
     int a = 3;
     int b = 5;
 
-    const int &result =
-            minialgo::min(a, b);
+    const int& result = minialgo::min(a, b);
 
     ASSERT_TRUE(&result == &a);
 }
@@ -132,8 +131,7 @@ void testMinReturnsFirstWhenEqual() {
     int a = 5;
     int b = 5;
 
-    const int &result =
-            minialgo::min(a, b);
+    const int& result = minialgo::min(a, b);
 
     ASSERT_TRUE(&result == &a);
 }
@@ -142,15 +140,9 @@ void testMaxPersonByAge() {
     Person alice{"Alice", 18};
     Person bob{"Bob", 20};
 
-    const Person &result =
-            minialgo::max(
-                alice,
-                bob,
-                [](const Person &left,
-                   const Person &right) {
-                    return left.age() < right.age();
-                }
-            );
+    const Person& result = minialgo::max(alice, bob, [](const Person& left, const Person& right) {
+        return left.age() < right.age();
+    });
 
     ASSERT_TRUE(&result == &bob);
 }
@@ -159,15 +151,9 @@ void testMaxPersonByName() {
     Person alice{"Alice", 30};
     Person bob{"Bob", 20};
 
-    const Person &result =
-            minialgo::max(
-                alice,
-                bob,
-                [](const Person &left,
-                   const Person &right) {
-                    return left.name() < right.name();
-                }
-            );
+    const Person& result = minialgo::max(alice, bob, [](const Person& left, const Person& right) {
+        return left.name() < right.name();
+    });
 
     ASSERT_TRUE(&result == &bob);
 }
@@ -177,8 +163,7 @@ void testClampValueInsideRange() {
     int low = 0;
     int high = 10;
 
-    const int &result =
-            minialgo::clamp(value, low, high);
+    const int& result = minialgo::clamp(value, low, high);
 
     ASSERT_TRUE(&result == &value);
 }
@@ -188,8 +173,7 @@ void testClampValueBelowRange() {
     int low = 0;
     int high = 10;
 
-    const int &result =
-            minialgo::clamp(value, low, high);
+    const int& result = minialgo::clamp(value, low, high);
 
     ASSERT_TRUE(&result == &low);
 }
@@ -199,8 +183,7 @@ void testClampValueAboveRange() {
     int low = 0;
     int high = 10;
 
-    const int &result =
-            minialgo::clamp(value, low, high);
+    const int& result = minialgo::clamp(value, low, high);
 
     ASSERT_TRUE(&result == &high);
 }
@@ -210,8 +193,7 @@ void testClampAtLowerBoundary() {
     int low = 0;
     int high = 10;
 
-    const int &result =
-            minialgo::clamp(value, low, high);
+    const int& result = minialgo::clamp(value, low, high);
 
     ASSERT_TRUE(&result == &value);
 }
@@ -221,8 +203,7 @@ void testClampAtUpperBoundary() {
     int low = 0;
     int high = 10;
 
-    const int &result =
-            minialgo::clamp(value, low, high);
+    const int& result = minialgo::clamp(value, low, high);
 
     ASSERT_TRUE(&result == &value);
 }
@@ -234,25 +215,16 @@ void testClampPersonByAge() {
 
     Person value{"Charles", 70};
 
-    const Person &result =
-            minialgo::clamp(
-                value,
-                young,
-                old,
-                [](const Person &left,
-                   const Person &right) {
-                    return left.age() < right.age();
-                }
-            );
+    const Person& result =
+        minialgo::clamp(value, young, old, [](const Person& left, const Person& right) {
+            return left.age() < right.age();
+        });
 
     ASSERT_TRUE(&result == &old);
 }
 
 void testClampInvalidRangeThrows() {
-    ASSERT_THROW(
-        minialgo::clamp(5, 10, 0),
-        std::invalid_argument
-    );
+    ASSERT_THROW(minialgo::clamp(5, 10, 0), std::invalid_argument);
 }
 
 void testSwapInt() {

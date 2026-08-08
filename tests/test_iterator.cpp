@@ -6,33 +6,21 @@
 
 #include <minialgo/Iterator.h>
 
-#include <vector>
 #include <list>
+#include <vector>
 
 void testDistanceVector() {
-    std::vector<int> values{
-        10, 20, 30, 40, 50
-    };
+    std::vector<int> values{10, 20, 30, 40, 50};
 
-    const auto result =
-            minialgo::distance(
-                values.begin(),
-                values.end()
-            );
+    const auto result = minialgo::distance(values.begin(), values.end());
 
     ASSERT_EQ(result, 5);
 }
 
 void testDistanceList() {
-    std::list<int> values{
-        10, 20, 30, 40, 50
-    };
+    std::list<int> values{10, 20, 30, 40, 50};
 
-    const auto result =
-            minialgo::distance(
-                values.begin(),
-                values.end()
-            );
+    const auto result = minialgo::distance(values.begin(), values.end());
 
     ASSERT_EQ(result, 5);
 }
@@ -40,19 +28,13 @@ void testDistanceList() {
 void testDistancePointer() {
     int values[]{10, 20, 30, 40};
 
-    const auto result =
-            minialgo::distance(
-                values,
-                values + 4
-            );
+    const auto result = minialgo::distance(values, values + 4);
 
     ASSERT_EQ(result, 4);
 }
 
 void testAdvanceVector() {
-    std::vector<int> values{
-        10, 20, 30, 40, 50
-    };
+    std::vector<int> values{10, 20, 30, 40, 50};
 
     auto iterator = values.begin();
 
@@ -62,9 +44,7 @@ void testAdvanceVector() {
 }
 
 void testAdvanceListForward() {
-    std::list<int> values{
-        10, 20, 30, 40
-    };
+    std::list<int> values{10, 20, 30, 40};
 
     auto iterator = values.begin();
 
@@ -74,9 +54,7 @@ void testAdvanceListForward() {
 }
 
 void testAdvanceListBackward() {
-    std::list<int> values{
-        10, 20, 30, 40
-    };
+    std::list<int> values{10, 20, 30, 40};
 
     auto iterator = values.end();
 
@@ -85,11 +63,8 @@ void testAdvanceListBackward() {
     ASSERT_EQ(*iterator, 30);
 }
 
-void testAdvancePointer()
-{
-    int values[]{
-        10, 20, 30, 40
-    };
+void testAdvancePointer() {
+    int values[]{10, 20, 30, 40};
 
     int* iterator = values;
 
