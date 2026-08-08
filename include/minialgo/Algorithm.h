@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <minialgo/Iterator.h>
+
 #include <iterator>
 #include <functional>
 #include <concepts>
@@ -31,7 +33,6 @@ namespace minialgo {
     Projection projection
 )
         {
-            std::invoke(projection, *iterator);
             {
                 std::invoke(
                     predicate,
@@ -82,7 +83,6 @@ namespace minialgo {
     Projection projection
 )
         {
-            std::invoke(projection, *iterator);
             {
                 std::invoke(
                     predicate,
@@ -229,7 +229,6 @@ namespace minialgo {
     Projection projection
 )
         {
-            std::invoke(projection, *iterator);
             {
                 std::invoke(
                     predicate,
@@ -266,7 +265,6 @@ namespace minialgo {
     Projection projection
 )
         {
-            std::invoke(projection, *iterator);
             {
                 std::invoke(
                     predicate,
@@ -286,5 +284,55 @@ namespace minialgo {
             std::move(predicate),
             std::move(projection)
         );
+    }
+
+    template<
+        std::forward_iterator Iterator,
+        typename T,
+        typename Compare = std::less<>,
+        typename Projection = std::identity>
+        requires requires(
+    Iterator iterator,
+    const T &value,
+    Compare compare,
+    Projection projection)
+        {
+            {
+                std::invoke(
+                    compare,
+                    std::invoke(projection, *iterator),
+                    value
+                )
+            } -> std::convertible_to<bool>;
+        }
+    Iterator lowerBound(
+        Iterator first,
+        Iterator last,
+        const T &value,
+        Compare compare = {},
+        Projection projection = {}
+    ) {
+        auto count = minialgo::distance(first, last);
+
+        while (count > 0) {
+            auto step = count / 2;
+            Iterator middle = first;
+            minialgo::advance(middle, step);
+
+            if (
+                std::invoke(
+                    compare,
+                    std::invoke(projection, *middle),
+                    value
+                )
+            ) {
+                first = middle;
+                ++first;
+                count -= step + 1;
+            } else {
+                count = step;
+            }
+        }
+        return first;
     }
 } // namespace minialgo

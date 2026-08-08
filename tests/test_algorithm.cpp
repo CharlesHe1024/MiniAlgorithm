@@ -885,6 +885,121 @@ void testCopyBackwardList() {
     ASSERT_EQ(*it, 30);
 }
 
+void testLowerBoundFindsFirstDuplicate() {
+    std::vector<int> values{1, 3, 3, 3, 5};
+
+    auto it = minialgo::lowerBound(
+        values.begin(),
+        values.end(),
+        3
+    );
+
+    ASSERT_TRUE(it == values.begin() + 1);
+    ASSERT_EQ(*it, 3);
+}
+
+void testLowerBoundInsertInMiddle() {
+    std::vector<int> values{1, 3, 5, 7};
+
+    auto it = minialgo::lowerBound(
+        values.begin(),
+        values.end(),
+        4
+    );
+
+    ASSERT_TRUE(it == values.begin() + 2);
+    ASSERT_EQ(*it, 5);
+}
+
+void testLowerBoundBeforeAll() {
+    std::vector<int> values{1, 3, 5, 7};
+
+    auto it = minialgo::lowerBound(
+        values.begin(),
+        values.end(),
+        0
+    );
+
+    ASSERT_TRUE(it == values.begin());
+}
+
+void testLowerBoundAfterAll() {
+    std::vector<int> values{1, 3, 5, 7};
+
+    auto it = minialgo::lowerBound(
+        values.begin(),
+        values.end(),
+        10
+    );
+
+    ASSERT_TRUE(it == values.end());
+}
+
+void testLowerBoundList() {
+    std::list<int> values{1, 3, 5, 7, 9};
+
+    auto it = minialgo::lowerBound(
+        values.begin(),
+        values.end(),
+        6
+    );
+
+    ASSERT_TRUE(it != values.end());
+    ASSERT_EQ(*it, 7);
+}
+
+void testLowerBoundWithProjection() {
+    struct Person {
+        std::string name;
+        int age;
+    };
+
+    std::vector<Person> people{
+        {"Alice", 16},
+        {"Bob", 18},
+        {"Charlie", 18},
+        {"David", 25}
+    };
+
+    auto it = minialgo::lowerBound(
+        people.begin(),
+        people.end(),
+        18,
+        std::less<>{},
+        &Person::age
+    );
+
+    ASSERT_TRUE(it != people.end());
+    ASSERT_EQ(it->name, std::string{"Bob"});
+    ASSERT_EQ(it->age, 18);
+}
+
+void testLowerBoundDescending() {
+    std::vector<int> values{9, 7, 5, 3, 1};
+
+    auto it = minialgo::lowerBound(
+        values.begin(),
+        values.end(),
+        6,
+        std::greater<>{}
+    );
+
+    ASSERT_TRUE(it == values.begin() + 2);
+    ASSERT_EQ(*it, 5);
+}
+
+void testLowerBoundEmpty() {
+    std::vector<int> values;
+
+    auto it = minialgo::lowerBound(
+        values.begin(),
+        values.end(),
+        10
+    );
+
+    ASSERT_TRUE(it == values.end());
+}
+
 int main() {
     testFindInVector();
     testFindMissingValue();
@@ -939,6 +1054,14 @@ int main() {
     testCopyBackwardBasic();
     testCopyBackwardOverlappingToRight();
     testCopyBackwardList();
+    testLowerBoundFindsFirstDuplicate();
+    testLowerBoundInsertInMiddle();
+    testLowerBoundBeforeAll();
+    testLowerBoundAfterAll();
+    testLowerBoundList();
+    testLowerBoundWithProjection();
+    testLowerBoundDescending();
+    testLowerBoundEmpty();
 
     std::cout << "Algorithm tests passed\n";
     return 0;
