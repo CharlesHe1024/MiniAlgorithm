@@ -10,6 +10,7 @@
 #include <iterator>
 #include <list>
 #include <memory>
+#include <span>
 #include <vector>
 
 void testFindInVector() {
@@ -1161,6 +1162,161 @@ void testUniqueWithErase() {
     ASSERT_EQ(values[2], 3);
 }
 
+void testSortBasic() {
+    std::vector<int> values{5, 2, 8, 1, 3};
+
+    minialgo::sort(values.begin(), values.end());
+
+    ASSERT_EQ(values[0], 1);
+    ASSERT_EQ(values[1], 2);
+    ASSERT_EQ(values[2], 3);
+    ASSERT_EQ(values[3], 5);
+    ASSERT_EQ(values[4], 8);
+}
+
+void testSortDuplicates() {
+    std::vector<int> values{3, 1, 3, 2, 3, 1};
+
+    minialgo::sort(values.begin(), values.end());
+
+    ASSERT_EQ(values[0], 1);
+    ASSERT_EQ(values[1], 1);
+    ASSERT_EQ(values[2], 2);
+    ASSERT_EQ(values[3], 3);
+    ASSERT_EQ(values[4], 3);
+    ASSERT_EQ(values[5], 3);
+}
+
+void testSortDescending() {
+    std::vector<int> values{1, 5, 3, 2, 4};
+
+    minialgo::sort(values.begin(), values.end(), std::greater<>{});
+
+    ASSERT_EQ(values[0], 5);
+    ASSERT_EQ(values[1], 4);
+    ASSERT_EQ(values[2], 3);
+    ASSERT_EQ(values[3], 2);
+    ASSERT_EQ(values[4], 1);
+}
+
+void testSortWithProjection() {
+    struct Person {
+        std::string name;
+        int age;
+    };
+
+    std::vector<Person> people{{"Alice", 30}, {"Bob", 18}, {"Charlie", 25}};
+
+    minialgo::sort(people.begin(), people.end(), std::less<>{}, &Person::age);
+
+    ASSERT_EQ(people[0].name, std::string{"Bob"});
+    ASSERT_EQ(people[1].name, std::string{"Charlie"});
+    ASSERT_EQ(people[2].name, std::string{"Alice"});
+}
+
+void testSortEmpty() {
+    std::vector<int> values;
+
+    minialgo::sort(values.begin(), values.end());
+
+    ASSERT_TRUE(values.empty());
+}
+
+void testSortSingleElement() {
+    std::vector<int> values{42};
+
+    minialgo::sort(values.begin(), values.end());
+
+    ASSERT_EQ(values[0], 42);
+}
+
+struct ZeroSentinel {
+    const int* end;
+};
+
+bool operator==(const int* iterator, ZeroSentinel sentinel) {
+    return iterator == sentinel.end || *iterator == 0;
+}
+
+bool operator==(ZeroSentinel sentinel, const int* iterator) {
+    return iterator == sentinel;
+}
+
+void testFindWithSentinel() {
+    int values[]{10, 20, 30, 0, 40, 50};
+
+    auto result = minialgo::find(values, ZeroSentinel{values + 6}, 30);
+
+    ASSERT_TRUE(result == values + 2);
+    ASSERT_EQ(*result, 30);
+}
+
+void testFindStopsAtSentinel() {
+    int values[]{10, 20, 30, 0, 40, 50};
+
+    auto result = minialgo::find(values, ZeroSentinel{values + 6}, 40);
+
+    ASSERT_TRUE(result == values + 3);
+    ASSERT_EQ(*result, 0);
+}
+
+void testRangeFindLvalueVector()
+{
+    std::vector<int> values{
+        1, 2, 3
+    };
+
+    auto result = minialgo::find(
+        values,
+        2
+    );
+
+    ASSERT_EQ(*result, 2);
+
+    static_assert(
+        !std::is_same_v<
+            decltype(result),
+            std::ranges::dangling
+        >
+    );
+}
+
+void testRangeFindTemporaryVector()
+{
+    auto result = minialgo::find(
+        std::vector<int>{1, 2, 3},
+        2
+    );
+
+    static_assert(
+        std::is_same_v<
+            decltype(result),
+            std::ranges::dangling
+        >
+    );
+}
+
+void testRangeFindTemporarySpan()
+{
+    int values[]{
+        1, 2, 3
+    };
+
+    auto result = minialgo::find(
+        std::span<int>{values},
+        2
+    );
+
+    ASSERT_EQ(*result, 2);
+
+    static_assert(
+        !std::is_same_v<
+            decltype(result),
+            std::ranges::dangling
+        >
+    );
+}
+
 int main() {
     testFindInVector();
     testFindMissingValue();
@@ -1262,6 +1418,14 @@ int main() {
     testRemoveWithProjection();
     testUniqueBasic();
     testUniqueWithErase();
+    testSortBasic();
+    testSortDescending();
+    testSortDuplicates();
+    testSortWithProjection();
+    testSortEmpty();
+    testRangeFindLvalueVector();
+    testRangeFindTemporaryVector();
+    testRangeFindTemporarySpan();
 
     std::cout << "Algorithm tests passed\n";
     return 0;

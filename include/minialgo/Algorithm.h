@@ -11,18 +11,38 @@
 #include <iterator>
 
 namespace minialgo {
-template <std::input_iterator Iterator, typename T, typename Projection = std::identity>
+template <std::input_iterator Iterator,
+          std::sentinel_for<Iterator> Sentinel,
+          typename T,
+          typename Projection = std::identity>
     requires requires(Iterator iterator, const T& value, Projection projection) {
         { std::invoke(projection, *iterator) == value } -> std::convertible_to<bool>;
     }
-Iterator find(Iterator first, Iterator last, const T& value, Projection projection = {}) {
+Iterator find(Iterator first, Sentinel last, const T& value, Projection projection = {}) {
     while (first != last) {
         if (std::invoke(projection, *first) == value) {
             return first;
         }
         ++first;
     }
-    return last;
+    return first;
+}
+
+template <std::ranges::input_range Range, typename T, typename Projection = std::identity>
+    requires requires(Range&& range, const T& value, Projection projection) {
+        {
+            std::invoke(projection, *std::ranges::begin(range)) == value
+        } -> std::convertible_to<bool>;
+    }
+std::ranges::borrowed_iterator_t<Range>
+find(Range&& range, const T& value, Projection projection = {}) {
+    auto result =
+        minialgo::find(std::ranges::begin(range), std::ranges::end(range), value, projection);
+    if constexpr (std::ranges::borrowed_range<Range>) {
+        return result;
+    } else {
+        return std::ranges::dangling{};
+    }
 }
 
 template <std::input_iterator Iterator, typename Predicate, typename Projection = std::identity>
@@ -39,6 +59,24 @@ Iterator findIf(Iterator first, Iterator last, Predicate predicate, Projection p
     return last;
 }
 
+template <std::ranges::input_range Range, typename Predicate, typename Projection = std::identity>
+    requires requires(Range&& range, Predicate predicate, Projection projection) {
+        {
+            std::invoke(predicate, std::invoke(projection, *std::ranges::begin(range)))
+        } -> std::convertible_to<bool>;
+    }
+std::ranges::borrowed_iterator_t<Range>
+findIf(Range&& range, Predicate predicate, Projection projection = {}) {
+    auto result =
+        minialgo::findIf(std::ranges::begin(range), std::ranges::end(range), predicate, projection);
+
+    if constexpr (std::ranges::borrowed_range<Range>) {
+        return result;
+    } else {
+        return std::ranges::dangling{};
+    }
+}
+
 template <std::input_iterator Iterator, typename T, typename Projection = std::identity>
     requires requires(Iterator iterator, const T& value, Projection projection) {
         { std::invoke(projection, *iterator) == value } -> std::convertible_to<bool>;
@@ -51,6 +89,16 @@ auto count(Iterator first, Iterator last, const T& value, Projection projection 
         }
     }
     return result;
+}
+
+template <std::ranges::input_range Range, typename T, typename Projection = std::identity>
+    requires requires(Range&& range, const T& value, Projection projection) {
+        {
+            std::invoke(projection, *std::ranges::begin(range)) == value
+        } -> std::convertible_to<bool>;
+    }
+auto count(Range&& range, const T& value, Projection projection = {}) {
+    return minialgo::count(std::ranges::begin(range), std::ranges::end(range), value, projection);
 }
 
 template <std::input_iterator Iterator, typename Predicate, typename Projection = std::identity>
@@ -475,5 +523,46 @@ auto equalRange(Iterator first,
     auto lower = minialgo::lowerBound(first, last, value, compare, projection);
     auto upper = minialgo::upperBound(first, last, value, compare, projection);
     return std::pair(lower, upper);
+}
+
+template <std::random_access_iterator Iterator,
+          typename Compare = std::less<>,
+          typename Projection = std::identity>
+    requires std::indirectly_swappable<Iterator, Iterator> &&
+             std::copy_constructible<std::remove_cvref_t<
+                 std::invoke_result_t<Projection&, std::iter_reference_t<Iterator>>>> &&
+             requires(Iterator iterator, Compare compare, Projection projection) {
+                 {
+                     std::invoke(compare,
+                                 std::invoke(projection, *iterator),
+                                 std::invoke(projection, *iterator))
+                 } -> std::convertible_to<bool>;
+             }
+void sort(Iterator first, Iterator last, Compare compare = {}, Projection projection = {}) {
+    if (last - first <= 1) {
+        return;
+    }
+    auto pivot = std::invoke(projection, *(first + (last - first) / 2));
+    Iterator left = first;
+    Iterator right = last - 1;
+    while (left <= right) {
+        while (std::invoke(compare, std::invoke(projection, *left), pivot)) {
+            ++left;
+        }
+        while (std::invoke(compare, pivot, std::invoke(projection, *right))) {
+            --right;
+        }
+        if (left <= right) {
+            minialgo::iterSwap(left, right);
+            ++left;
+            --right;
+        }
+    }
+    if (first < right + 1) {
+        minialgo::sort(first, right + 1, compare, projection);
+    }
+    if (left < last) {
+        minialgo::sort(left, last, compare, projection);
+    }
 }
 } // namespace minialgo
