@@ -132,7 +132,7 @@ void testCountPerson() {
 void testForEachModifiesElements() {
     std::vector<int> values{1, 2, 3};
 
-    minialgo::for_each(values.begin(), values.end(), [](int& value) { value *= 2; });
+    minialgo::forEach(values.begin(), values.end(), [](int& value) { value *= 2; });
 
     ASSERT_EQ(values[0], 2);
     ASSERT_EQ(values[1], 4);
@@ -144,7 +144,7 @@ void testForEachAccumulatesValues() {
 
     int sum = 0;
 
-    minialgo::for_each(values.begin(), values.end(), [&sum](int value) { sum += value; });
+    minialgo::forEach(values.begin(), values.end(), [&sum](int value) { sum += value; });
 
     ASSERT_EQ(sum, 10);
 }
@@ -160,7 +160,7 @@ struct MultiplyBy {
 void testForEachWithFunctionObject() {
     std::vector<int> values{1, 2, 3};
 
-    minialgo::for_each(values.begin(), values.end(), MultiplyBy{3});
+    minialgo::forEach(values.begin(), values.end(), MultiplyBy{3});
 
     ASSERT_EQ(values[0], 3);
     ASSERT_EQ(values[1], 6);
@@ -1260,61 +1260,30 @@ void testFindStopsAtSentinel() {
     ASSERT_EQ(*result, 0);
 }
 
-void testRangeFindLvalueVector()
-{
-    std::vector<int> values{
-        1, 2, 3
-    };
+void testRangeFindLvalueVector() {
+    std::vector<int> values{1, 2, 3};
 
-    auto result = minialgo::find(
-        values,
-        2
-    );
+    auto result = minialgo::find(values, 2);
 
     ASSERT_EQ(*result, 2);
 
-    static_assert(
-        !std::is_same_v<
-            decltype(result),
-            std::ranges::dangling
-        >
-    );
+    static_assert(!std::is_same_v<decltype(result), std::ranges::dangling>);
 }
 
-void testRangeFindTemporaryVector()
-{
-    auto result = minialgo::find(
-        std::vector<int>{1, 2, 3},
-        2
-    );
+void testRangeFindTemporaryVector() {
+    auto result = minialgo::find(std::vector<int>{1, 2, 3}, 2);
 
-    static_assert(
-        std::is_same_v<
-            decltype(result),
-            std::ranges::dangling
-        >
-    );
+    static_assert(std::is_same_v<decltype(result), std::ranges::dangling>);
 }
 
-void testRangeFindTemporarySpan()
-{
-    int values[]{
-        1, 2, 3
-    };
+void testRangeFindTemporarySpan() {
+    int values[]{1, 2, 3};
 
-    auto result = minialgo::find(
-        std::span<int>{values},
-        2
-    );
+    auto result = minialgo::find(std::span<int>{values}, 2);
 
     ASSERT_EQ(*result, 2);
 
-    static_assert(
-        !std::is_same_v<
-            decltype(result),
-            std::ranges::dangling
-        >
-    );
+    static_assert(!std::is_same_v<decltype(result), std::ranges::dangling>);
 }
 
 int main() {

@@ -9,6 +9,8 @@
 #include <concepts>
 #include <functional>
 #include <iterator>
+#include <ranges>
+#include <utility>
 
 namespace minialgo {
 template <std::input_iterator Iterator,
@@ -45,18 +47,21 @@ find(Range&& range, const T& value, Projection projection = {}) {
     }
 }
 
-template <std::input_iterator Iterator, typename Predicate, typename Projection = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Projection projection) {
-        { std::invoke(predicate, std::invoke(projection, *iterator)) } -> std::convertible_to<bool>;
-    }
-Iterator findIf(Iterator first, Iterator last, Predicate predicate, Projection projection = {}) {
+template <std::input_iterator Iterator,
+          std::sentinel_for<Iterator> Sentinel,
+          typename Predicate,
+          typename Projection = std::identity>
+    requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
+Iterator findIf(Iterator first, Sentinel last, Predicate predicate, Projection projection = {}) {
     while (first != last) {
         if (std::invoke(predicate, std::invoke(projection, *first))) {
             return first;
         }
+
         ++first;
     }
-    return last;
+
+    return first;
 }
 
 template <std::ranges::input_range Range, typename Predicate, typename Projection = std::identity>
@@ -102,9 +107,7 @@ auto count(Range&& range, const T& value, Projection projection = {}) {
 }
 
 template <std::input_iterator Iterator, typename Predicate, typename Projection = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Projection projection) {
-        { std::invoke(predicate, std::invoke(projection, *iterator)) } -> std::convertible_to<bool>;
-    }
+    requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
 auto countIf(Iterator first, Iterator last, Predicate predicate, Projection projection = {}) {
     auto result = std::iter_difference_t<Iterator>{0};
     for (; first != last; ++first) {
@@ -115,12 +118,9 @@ auto countIf(Iterator first, Iterator last, Predicate predicate, Projection proj
     return result;
 }
 
-template <std::input_iterator Iterator, typename Predicate, typename Project = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Project project) {
-        std::invoke(project, *iterator);
-        { std::invoke(predicate, std::invoke(project, *iterator)) } -> std::convertible_to<bool>;
-    }
-bool allOf(Iterator first, Iterator last, Predicate predicate, Project project = {}) {
+template <std::input_iterator Iterator, typename Predicate, typename Projection = std::identity>
+    requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
+bool allOf(Iterator first, Iterator last, Predicate predicate, Projection project = {}) {
     for (; first != last; ++first) {
         if (!std::invoke(predicate, std::invoke(project, *first))) {
             return false;
@@ -130,9 +130,7 @@ bool allOf(Iterator first, Iterator last, Predicate predicate, Project project =
 }
 
 template <std::input_iterator Iterator, typename Predicate, typename Projection = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Projection projection) {
-        { std::invoke(predicate, std::invoke(projection, *iterator)) } -> std::convertible_to<bool>;
-    }
+    requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
 bool anyOf(Iterator first, Iterator last, Predicate predicate, Projection projection = {}) {
     for (; first != last; ++first) {
         if (std::invoke(predicate, std::invoke(projection, *first))) {
@@ -143,16 +141,14 @@ bool anyOf(Iterator first, Iterator last, Predicate predicate, Projection projec
 }
 
 template <std::input_iterator Iterator, typename Predicate, typename Projection = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Projection projection) {
-        { std::invoke(predicate, std::invoke(projection, *iterator)) } -> std::convertible_to<bool>;
-    }
+    requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
 bool noneOf(Iterator first, Iterator last, Predicate predicate, Projection projection = {}) {
     return !minialgo::anyOf(first, last, std::move(predicate), std::move(projection));
 }
 
 template <std::input_iterator Iterator, typename Function>
-    requires requires(Iterator iterator, Function function) { std::invoke(function, *iterator); }
-Function for_each(Iterator first, Iterator last, Function function) {
+    requires std::indirectly_unary_invocable<Function, Iterator>
+Function forEach(Iterator first, Iterator last, Function function) {
     for (; first != last; ++first) {
         std::invoke(function, *first);
     }
@@ -169,18 +165,17 @@ void fill(Iterator first, Iterator last, const T& value) {
 
 template <std::input_iterator InputIterator,
           typename OutputIterator,
-          typename UnaryOperation,
+          typename Operation,
           typename Projection = std::identity>
-    requires requires(InputIterator input,
-                      OutputIterator output,
-                      UnaryOperation operation,
-                      Projection projection) {
-        *output = std::invoke(operation, std::invoke(projection, *input));
-    }
+    requires std::indirectly_unary_invocable<Operation,
+                                             std::projected<InputIterator, Projection>> &&
+             std::indirectly_writable<
+                 OutputIterator,
+                 std::indirect_result_t<Operation, std::projected<InputIterator, Projection>>>
 OutputIterator transform(InputIterator first,
                          InputIterator last,
                          OutputIterator destination,
-                         UnaryOperation operation,
+                         Operation operation,
                          Projection projection = {}) {
     for (; first != last; ++first, ++destination) {
         *destination = std::invoke(operation, std::invoke(projection, *first));
@@ -231,9 +226,7 @@ copyBackward(InputIterator first, InputIterator last, OutputIterator destination
 }
 
 template <std::input_iterator InputIterator, typename OutputIterator>
-    requires requires(InputIterator input, OutputIterator output) {
-        *output = std::ranges::iter_move(input);
-    }
+    requires std::indirectly_movable<InputIterator, OutputIterator>
 OutputIterator move(InputIterator first, InputIterator last, OutputIterator destination) {
     for (; first != last; ++first, ++destination) {
         *destination = std::ranges::iter_move(first);
@@ -242,9 +235,7 @@ OutputIterator move(InputIterator first, InputIterator last, OutputIterator dest
 }
 
 template <std::bidirectional_iterator InputIterator, std::bidirectional_iterator OutputIterator>
-    requires requires(InputIterator input, OutputIterator output) {
-        *output = std::ranges::iter_move(input);
-    }
+    requires std::indirectly_movable<InputIterator, OutputIterator>
 OutputIterator
 moveBackward(InputIterator first, InputIterator last, OutputIterator destinationLast) {
     while (first != last) {
@@ -262,7 +253,7 @@ void iterSwap(Iterator1 iterator1, Iterator2 iterator2) {
 }
 
 template <std::bidirectional_iterator Iterator>
-    requires std::indirectly_swappable<Iterator, Iterator>
+    requires std::permutable<Iterator>
 void reverse(Iterator first, Iterator last) {
     while (first != last) {
         --last;
@@ -275,7 +266,7 @@ void reverse(Iterator first, Iterator last) {
 }
 
 template <std::bidirectional_iterator Iterator>
-    requires std::indirectly_swappable<Iterator, Iterator>
+    requires std::permutable<Iterator>
 Iterator rotate(Iterator first, Iterator middle, Iterator last) {
     if (first == middle) {
         return last;
@@ -296,9 +287,8 @@ Iterator rotate(Iterator first, Iterator middle, Iterator last) {
 template <std::bidirectional_iterator Iterator,
           typename Predicate,
           typename Projection = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Projection projection) {
-        { std::invoke(predicate, std::invoke(projection, *iterator)) } -> std::convertible_to<bool>;
-    } && std::indirectly_swappable<Iterator, Iterator>
+    requires std::permutable<Iterator> &&
+             std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
 Iterator partition(Iterator first, Iterator last, Predicate predicate, Projection projection = {}) {
     while (true) {
         while (first != last && std::invoke(predicate, std::invoke(projection, *first))) {
@@ -323,9 +313,7 @@ Iterator partition(Iterator first, Iterator last, Predicate predicate, Projectio
 }
 
 template <std::forward_iterator Iterator, typename Predicate, typename Projection = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Projection projection) {
-        { std::invoke(predicate, std::invoke(projection, *iterator)) } -> std::convertible_to<bool>;
-    }
+    requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
 Iterator
 partitionPoint(Iterator first, Iterator last, Predicate predicate, Projection projection = {}) {
     auto count = minialgo::distance(first, last);
@@ -352,11 +340,8 @@ partitionPoint(Iterator first, Iterator last, Predicate predicate, Projection pr
 }
 
 template <std::forward_iterator Iterator, typename Predicate, typename Projection = std::identity>
-    requires requires(Iterator iterator, Predicate predicate, Projection projection) {
-        { std::invoke(predicate, std::invoke(projection, *iterator)) } -> std::convertible_to<bool>;
-
-        *iterator = std::ranges::iter_move(iterator);
-    }
+    requires std::permutable<Iterator> &&
+             std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
 Iterator removeIf(Iterator first, Iterator last, Predicate predicate, Projection projection = {}) {
     first = minialgo::findIf(first, last, predicate, projection);
 
@@ -379,6 +364,10 @@ Iterator removeIf(Iterator first, Iterator last, Predicate predicate, Projection
 }
 
 template <std::forward_iterator Iterator, typename T, typename Projection = std::identity>
+    requires std::permutable<Iterator> &&
+             requires(Iterator iterator, const T& value, Projection projection) {
+                 { std::invoke(projection, *iterator) == value } -> std::convertible_to<bool>;
+             }
 Iterator remove(Iterator first, Iterator last, const T& value, Projection projection = {}) {
     return minialgo::removeIf(
         first, last, [&value](const auto& projected) { return projected == value; }, projection);
@@ -387,17 +376,10 @@ Iterator remove(Iterator first, Iterator last, const T& value, Projection projec
 template <std::forward_iterator Iterator,
           typename BinaryPredicate = std::equal_to<>,
           typename Projection = std::identity>
-    requires requires(Iterator iterator1,
-                      Iterator iterator2,
-                      BinaryPredicate predicate,
-                      Projection projection) {
-        {
-            std::invoke(
-                predicate, std::invoke(projection, *iterator1), std::invoke(projection, *iterator2))
-        } -> std::convertible_to<bool>;
-
-        *iterator1 = std::ranges::iter_move(iterator2);
-    }
+    requires std::permutable<Iterator> &&
+             std::indirect_binary_predicate<BinaryPredicate,
+                                            std::projected<Iterator, Projection>,
+                                            std::projected<Iterator, Projection>>
 Iterator
 unique(Iterator first, Iterator last, BinaryPredicate predicate = {}, Projection projection = {}) {
     if (first == last) {
@@ -428,16 +410,13 @@ template <std::forward_iterator Iterator,
           typename T,
           typename Compare = std::less<>,
           typename Projection = std::identity>
-    requires requires(Iterator iterator, const T& value, Compare compare, Projection projection) {
-        {
-            std::invoke(compare, std::invoke(projection, *iterator), value)
-        } -> std::convertible_to<bool>;
-    }
-Iterator lowerBound(Iterator first,
-                    Iterator last,
-                    const T& value,
-                    Compare compare = {},
-                    Projection projection = {}) {
+    requires std::
+        indirect_strict_weak_order<Compare, std::projected<Iterator, Projection>, const T*>
+    Iterator lowerBound(Iterator first,
+                        Iterator last,
+                        const T& value,
+                        Compare compare = {},
+                        Projection projection = {}) {
     auto count = minialgo::distance(first, last);
 
     while (count > 0) {
@@ -460,16 +439,13 @@ template <std::forward_iterator Iterator,
           typename T,
           typename Compare = std::less<>,
           typename Projection = std::identity>
-    requires requires(Iterator iterator, const T& value, Compare compare, Projection projection) {
-        {
-            std::invoke(compare, value, std::invoke(projection, *iterator))
-        } -> std::convertible_to<bool>;
-    }
-Iterator upperBound(Iterator first,
-                    Iterator last,
-                    const T& value,
-                    Compare compare = {},
-                    Projection projection = {}) {
+    requires std::
+        indirect_strict_weak_order<Compare, std::projected<Iterator, Projection>, const T*>
+    Iterator upperBound(Iterator first,
+                        Iterator last,
+                        const T& value,
+                        Compare compare = {},
+                        Projection projection = {}) {
     auto count = minialgo::distance(first, last);
     while (count > 0) {
         auto step = count / 2;
@@ -490,19 +466,13 @@ template <std::forward_iterator Iterator,
           typename T,
           typename Compare = std::less<>,
           typename Projection = std::identity>
-    requires requires(Iterator iterator, const T& value, Compare compare, Projection projection) {
-        {
-            std::invoke(compare, std::invoke(projection, *iterator), value)
-        } -> std::convertible_to<bool>;
-        {
-            std::invoke(compare, value, std::invoke(projection, *iterator))
-        } -> std::convertible_to<bool>;
-    }
-bool binarySearch(Iterator first,
-                  Iterator last,
-                  const T& value,
-                  Compare compare = {},
-                  Projection projection = {}) {
+    requires std::
+        indirect_strict_weak_order<Compare, std::projected<Iterator, Projection>, const T*>
+    bool binarySearch(Iterator first,
+                      Iterator last,
+                      const T& value,
+                      Compare compare = {},
+                      Projection projection = {}) {
     const auto it = minialgo::lowerBound(first, last, value, compare, projection);
     if (it == last) {
         return false;
@@ -515,29 +485,22 @@ template <std::forward_iterator Iterator,
           typename T,
           typename Compare = std::less<>,
           typename Projection = std::identity>
-auto equalRange(Iterator first,
-                Iterator last,
-                const T& value,
-                Compare compare = {},
-                Projection projection = {}) {
+    requires std::
+        indirect_strict_weak_order<Compare, std::projected<Iterator, Projection>, const T*>
+    auto equalRange(Iterator first,
+                    Iterator last,
+                    const T& value,
+                    Compare compare = {},
+                    Projection projection = {}) {
     auto lower = minialgo::lowerBound(first, last, value, compare, projection);
-    auto upper = minialgo::upperBound(first, last, value, compare, projection);
+    auto upper = minialgo::upperBound(lower, last, value, compare, projection);
     return std::pair(lower, upper);
 }
 
 template <std::random_access_iterator Iterator,
           typename Compare = std::less<>,
           typename Projection = std::identity>
-    requires std::indirectly_swappable<Iterator, Iterator> &&
-             std::copy_constructible<std::remove_cvref_t<
-                 std::invoke_result_t<Projection&, std::iter_reference_t<Iterator>>>> &&
-             requires(Iterator iterator, Compare compare, Projection projection) {
-                 {
-                     std::invoke(compare,
-                                 std::invoke(projection, *iterator),
-                                 std::invoke(projection, *iterator))
-                 } -> std::convertible_to<bool>;
-             }
+    requires std::sortable<Iterator, Compare, Projection>
 void sort(Iterator first, Iterator last, Compare compare = {}, Projection projection = {}) {
     if (last - first <= 1) {
         return;
